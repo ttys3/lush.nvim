@@ -1,7 +1,7 @@
 local parser = {}
 
 local known_codes = {
-    invalid_group_options = "invalid_group_options",
+    invalid_group_definition = "invalid_group_definition",
     circular_self_link = "circular_self_link",
     invalid_link_name = "invalid_link_name",
     defintion_must_be_table = "defintion_must_be_table",
@@ -23,7 +23,7 @@ local message_for_code = function(code)
     could_not_infer_group_type = function(context)
       return "Could not infer group type: " .. context.on
     end,
-    invalid_group_options = function(context)
+    invalid_group_definition = function(context)
       return "Group defition must be a table"
     end,
     circular_self_link = function(context)

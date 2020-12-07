@@ -1,7 +1,7 @@
 local parser_error = require('lush.errors').parser.generate_for_code
 
-local function allowed_option_keys()
-  -- note, sometimes `1` is manually inserted into allowed options,
+local function allowed_group_def_keys()
+  -- note, sometimes `1` is manually inserted into allowed keys,
   -- since it's OK in some edge cases (inheritance, links)
   return {"fg", "bg", "sp", "gui", "lush"}
 end
@@ -43,7 +43,7 @@ end
 local enforce_generic_definition_type = function(name, opts)
   if type(opts) ~= "table" or opts == {} then
     -- !{} or {} or { group, group, ... } -> invalid
-    return parser_error.invalid_group_options({on = name})
+    return parser_error.invalid_group_definition({on = name})
   end
 end
 
@@ -102,7 +102,7 @@ local wrap_group_enforce_no_inference = function(name, opts)
 
       --  -- lush group referenced has key requested,
       --  -- so proxy this would-be group's value to the proxy group
-      --  proxied_options[key] = val[key]
+      --  proxied_group_def[key] = val[key]
       return parser_error.inference_disabled({on = name, key = key})
     end
   end
@@ -123,7 +123,7 @@ end
 -- IMPORTANT: ensure all validators are non-nil, variable is named correctly,
 --            is in scope, else ipairs() may skip some or all validations!
 --
-local enforce = function(validators, group_name, group_options) 
+local enforce = function(validators, group_name, group_def) 
   for i = 1, #validators do
     if type(validators[i]) ~= "function" then
       error("Validate validators malformed, not contiguous or not a function. " ..
@@ -132,14 +132,14 @@ local enforce = function(validators, group_name, group_options)
   end
 
   for _, validator in ipairs(validators) do
-    local err = validator(group_name, group_options)
+    local err = validator(group_name, group_def)
     if err then return err end
   end
 end
 
--- wrap options in object that either proxies indexes to options
--- or when called, returns the options
-local create_direct_group = function(group_name, group_options)
+-- wrap definition in object that either proxies indexes to definition
+-- or when called, returns the definition
+local create_direct_group = function(group_name, group_def)
   local enforcements = {
     enforce_definition_is_table,
     enforce_no_protected_keys,
@@ -149,26 +149,26 @@ local create_direct_group = function(group_name, group_options)
     wrap_group_enforce_no_placeholders,
     wrap_group_enforce_no_inference,
   }
-  local err = enforce(enforcements, group_name, group_options)
+  local err = enforce(enforcements, group_name, group_def)
   if err then return resolves_as_error(err) end
 
-  local proxied_options = {}
-  for key, tuple in pairs(group_options) do
+  local proxied_group_def = {}
+  for key, tuple in pairs(group_def) do
     local val, kind = unpack(tuple)
     -- if is_concrete_group(kind) then
     --   --  -- lush group referenced has key requested,
     --   --  -- so proxy this would-be group's value to the proxy group
-    --   --  proxied_options[key] = val[key]
+    --   --  proxied_group_def[key] = val[key]
     -- end
     -- no group to proxy to, just map key to value
-    proxied_options[key] = val
+    proxied_group_def[key] = val
   end
 
   -- Define the actual group table
   return setmetatable({}, {
 
     -- When the group is index'd, return our special keys
-    -- or proxy out to the wrapped options (which may proxy again to
+    -- or proxy out to the wrapped group_def (which may proxy again to
     -- a linked group)
     __index = function(_, key)
       if key == "__name" then
@@ -176,14 +176,14 @@ local create_direct_group = function(group_name, group_options)
       elseif key == "__type" then
         return "lush_group"
       else
-        return proxied_options[key]
+        return proxied_group_def[key]
       end
     end,
 
     __call = function()
-      -- return proxied options, but also guard against those
-      -- options being called, which implies a redefinition attempt error
-      return setmetatable(proxied_options, {
+      -- return proxied group_def, but also guard against those
+      -- group_def being called, which implies a redefinition attempt error
+      return setmetatable(proxied_group_def, {
         -- attempt to redefine group
         __call = resolves_as_error(parser_error.group_redefined({on = group_name}))
       })
@@ -205,19 +205,19 @@ local enforce_no_placeholder_inherit = function(name, opts)
   end
 end
 
-local create_inherit_group = function(group_name, group_options)
+local create_inherit_group = function(group_name, group_def)
   local enforcements = {
     enforce_no_circular_self_inherit,
     enforce_no_placeholder_inherit,
   }
-  local err = enforce(enforcements, group_name, group_options)
+  local err = enforce(enforcements, group_name, group_def)
   if err then return resolves_as_error(err) end
 
   -- merge values from parent if not present in child
   local merged = {}
-  local link, kind = unpack(group_options[1])
-  for _, key in ipairs(allowed_option_keys()) do
-    local tuple = group_options[key]
+  local link, kind = unpack(group_def[1])
+  for _, key in ipairs(allowed_group_def_keys()) do
+    local tuple = group_def[key]
     if tuple then
       merged[key] = tuple
     else
@@ -243,17 +243,17 @@ local enforce_no_placeholder_link = function(name, opts)
   end
 end
 
--- wrap link in object that proxies indexes to linked group options
+-- wrap link in object that proxies indexes to linked group group_def
 -- or when called, link descriptor
-local create_link_group = function(group_name, group_options)
+local create_link_group = function(group_name, group_def)
   local enforcements = {
     enforce_no_circular_self_link,
     enforce_no_placeholder_link
   }
-  local err = enforce(enforcements, group_name, group_options)
+  local err = enforce(enforcements, group_name, group_def)
   if err then return resolves_as_error(err) end
 
-  local link_to, kind = unpack(group_options[1])
+  local link_to, kind = unpack(group_def[1])
   return setmetatable({}, {
     __index = function(_, key)
       if key == "__name" then
@@ -273,11 +273,11 @@ local create_link_group = function(group_name, group_options)
   })
 end
 
-local create_group = function(group_type, group_name, group_options)
-  if group_type == "group" then return create_direct_group(group_name, group_options) end
-  if group_type == "inherit" then return create_inherit_group(group_name, group_options) end
-  if group_type == "link" then return create_link_group(group_name, group_options) end
-  return nil, "unknow_group_type"
+local create_group = function(group_type, group_name, group_def)
+  if group_type == "group" then return create_direct_group(group_name, group_def) end
+  if group_type == "inherit" then return create_inherit_group(group_name, group_def) end
+  if group_type == "link" then return create_link_group(group_name, group_def) end
+  return nil, "unknown_group_type"
 end
 
 local infer_group_type = function(group_def)
@@ -300,12 +300,12 @@ local infer_group_type = function(group_def)
       return "link"
     end
   else
-    return nil, "unknown_options"
+    return nil, "uninferrable_group_type"
   end
 end
 
 
-local parse = function(lush_spec_fn, options)
+local parse = function(lush_spec_fn, parse_options)
   if type(lush_spec_fn) ~= "function" then
     error(parser_error.malformed_lush_spec({on = "spec"}))
   end
@@ -347,7 +347,7 @@ local parse = function(lush_spec_fn, options)
         -- external values may respond with an error.
         -- (AKA hsl.__type is an error of "unsupported modifier")
         local protected = {}
-        for _, key in ipairs(allowed_option_keys()) do
+        for _, key in ipairs(allowed_group_def_keys()) do
           local val = group_def[key]
           if val then
             local is_group = group_lookup[val]
@@ -357,7 +357,7 @@ local parse = function(lush_spec_fn, options)
         end
 
         -- inherit and link both should have a [1] key, but we keep out out of
-        -- the allowed options check for ease of use elsewhere.
+        -- the allowed group_def check for ease of use elsewhere.
         if group_def[1] and (group_type == "inherit" or group_type == "link") then
           local val = group_def[1]
           local is_group = group_lookup[val]

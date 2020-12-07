@@ -27,7 +27,7 @@ describe "parser", ->
       parse -> {
         A("string"),
       })
-    assert.matches("invalid_group_options", e.code)
+    assert.matches("invalid_group_definition", e.code)
     assert.not.matches("No message avaliable", e.msg)
 
   it "warns when re-defining a group", ->
