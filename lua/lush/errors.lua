@@ -16,10 +16,15 @@ local known_codes = {
     malformed_lush_spec = "malformed_lush_spec",
     invalid_group_name = "invalid_group_name",
     could_not_infer_group_type = "could_not_infer_group_type",
+  -- parser option errors
+  adjust_colors_non_function = "adjust_colors_non_function",
 }
 
 local message_for_code = function(code)
   local message_map = {
+    adjust_colors_non_function = function(context)
+      return "after.adjust_colors was given a non-function (index: " .. context.on .. ")"
+    end,
     could_not_infer_group_type = function(context)
       return "Could not infer group type: " .. context.on
     end,
@@ -87,7 +92,6 @@ parser.generate_for_code = setmetatable({}, {
     -- check error code is known, report as hard stop if it's not
     local err = known_codes[code]
     if not err then error("Unknown code: " .. code) end
-
 
     return function(context)
       return {

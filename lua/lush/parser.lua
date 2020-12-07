@@ -441,6 +441,28 @@ local parse = function(lush_spec_fn, parse_options)
     parsed[group.__name] = ast
   end
 
+  if parse_options and
+     parse_options.after and
+     parse_options.after.adjust_colors then
+    -- TODO: add __type to hsl so we can type check in and out (useful in other code too)
+    for group_name, group in pairs(parsed) do
+      -- fg and bg are our only 'color keys', so only apply adjustments to those
+      local fg = group.fg
+      local bg = group.bg
+      for i, adjustment in ipairs(parse_options.after.adjust_colors) do
+        if type(adjustment) ~= "function" then
+          error(parser_error.adjust_colors_non_function({
+            on = i
+          }))
+        end
+        if fg then fg = adjustment(fg) end
+        if bg then bg = adjustment(bg) end
+      end
+      group.fg = fg
+      group.bg = bg
+    end
+  end
+
   return parsed
 end
 
