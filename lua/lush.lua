@@ -111,10 +111,12 @@ end
 --
 -- lush(function() ... end)
 --   -> define a lush spec, returns a parsed spec
+--   -> essentially delegates to parse()
 --   -> traditionally called in a lua/lush_theme/theme.lua file
 --
 -- lush({...})
 --   -> applying a parsed spec, automatically sets the clear option
+--   -> essentially delegates to apply(compile())
 --   -> traditionally called in the colors/colors.vim file
 --
 -- (spec or parsed_spec, table) -> parsed_spec or apply_spec
@@ -125,7 +127,7 @@ local function detect_easy(spec_or_parsed, options)
     return easy_spec(spec, options)
   -- parsed specs are tables
   elseif type(spec_or_parsed) == "table" and
-        spec_or_parsed.__type == "parsed_lush_spec" then
+         spec_or_parsed.__type == "parsed_lush_spec" then
     local parsed = spec_or_parsed
     return easy_parsed(parsed, options)
   else

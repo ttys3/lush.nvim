@@ -1,21 +1,23 @@
 local parser = {}
 
 local known_codes = {
-    invalid_group_definition = "invalid_group_definition",
-    circular_self_link = "circular_self_link",
-    invalid_link_name = "invalid_link_name",
-    defintion_must_be_table = "defintion_must_be_table",
-    reserved_keyword = "reserved_keyword",
-    undefined_group = "undefined_group",
-    inference_disabled = "inference_disabled",
-    group_redefined = "group_redefined",
-    circular_self_inherit = "circular_self_inherit",
-    invalid_parent = "invalid_parent",
-    too_many_parents = "too_many_parents",
-    group_value_is_group = "group_value_is_group",
-    malformed_lush_spec = "malformed_lush_spec",
-    invalid_group_name = "invalid_group_name",
-    could_not_infer_group_type = "could_not_infer_group_type",
+  -- group definition errors
+  invalid_group_definition = "invalid_group_definition",
+  circular_self_link = "circular_self_link",
+  invalid_link_name = "invalid_link_name",
+  defintion_must_be_table = "defintion_must_be_table",
+  reserved_keyword = "reserved_keyword",
+  undefined_group = "undefined_group",
+  inference_disabled = "inference_disabled",
+  group_redefined = "group_redefined",
+  circular_self_inherit = "circular_self_inherit",
+  invalid_parent = "invalid_parent",
+  too_many_parents = "too_many_parents",
+  group_value_is_group = "group_value_is_group",
+  malformed_lush_spec = "malformed_lush_spec",
+  invalid_group_name = "invalid_group_name",
+  could_not_infer_group_type = "could_not_infer_group_type",
+
   -- parser option errors
   adjust_colors_non_function = "adjust_colors_non_function",
 }

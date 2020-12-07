@@ -434,7 +434,6 @@ local parse = function(lush_spec_fn, parse_options)
 
   for _, group in ipairs(spec) do
     -- attempt to resolve group
-    --local ast, e = resolve_group_bindings(group)
     local ast, e = group()
     if e then error(e) end
 
