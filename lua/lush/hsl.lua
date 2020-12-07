@@ -1,4 +1,5 @@
 local convert = require('lush.hsl.convert')
+local adjust = require('lush.hsl.adjust')
 
 local function hsl_clamp(color)
   local clamp = function(val, min, max)
@@ -193,7 +194,7 @@ local function hsl_from_hex(str)
   })
 end
 
-return function(h_or_hex, s, l)
+local function call_fn(h_or_hex, s, l)
   assert(h_or_hex, "hsl() expects (number, number, number) or (string)")
   local h, hex = h_or_hex, h_or_hex
 
@@ -208,3 +209,14 @@ return function(h_or_hex, s, l)
     return hsl_from_hsl(h, s, l)
   end
 end
+
+M = {
+  adjust =  adjust,
+  color = call_fn,
+}
+
+return setmetatable(M, {
+  __call = function(_, ...)
+    return call_fn(...)
+  end,
+})
