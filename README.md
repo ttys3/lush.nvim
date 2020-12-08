@@ -76,6 +76,8 @@ color = hsl(0, 100, 50) -- equivilent to rgb(255,0,0) elsewhere
 hex_color = hsl("#FF0000") -- hex_color == color
 ```
 
+#### HSL Operations
+
 It provides multiple methods for manipulating a color. All functions are pure,
 always returning new colors and leaving the originals unmodified. Functions
 can be chained.
@@ -173,6 +175,34 @@ local chained_compliment = red.ro(180)          -- chain via aliases
                               .sa(10)
 print(red)                                      -- as string "#FF0000"
 ```
+
+#### HSL Adjusters
+
+HSL also provides some color adjusters, for use with Lush (explained below).
+
+When called, they return a function which accepts a HSL color, and return
+an adjusted HSL color. Normally you won't call these manually.
+
+These include:
+
+- A naive contrast adjuster, `hsl.adjust.contrast(0-100)`.
+  - This will adjust any colors with a lightness under `50` *down*, anything over `50` *up*
+    and anything with a lightness of `50` will remain at `50`. The strength ranges from
+    `0` to `100`, where `0` has no effect, `50` will add approximately `50%` more contrast
+    and `100` will result in a mostly grey-scale color (by setting the "lightness" in HSL
+    at 0 or 100).
+  - This implementation is subject to improvement.
+- A collection of color-blindness simulators. Colorblindness varies between people, so
+  these should only be used as a rough indicator of how readable your color scheme may
+  be for color blind eyes.
+  - `hsl.adjust.protanopia()` (0.5% of population)
+  - `hsl.adjust.protanomaly()` (0.55% of population)
+  - `hsl.adjust.deuteranopia()` (0,5% of population)
+  - `hsl.adjust.deuteranomaly()` (3.2% of population)
+  - `hsl.adjust.tritanopia()` (less than 0.5% of population)
+  - `hsl.adjust.tritanomaly()` (less than 0.005% of population)
+  - `hsl.adjust.achromatopsia()` (very rare)
+  - `hsl.adjust.achromatomaly()` (very rare)
 
 Lush Spec
 ---------
@@ -307,6 +337,41 @@ Syntax:
 
 ```lua
 InheritedGroup { Parent, gui = "bold" },
+```
+
+#### Lush Options
+
+You can pass options to Lush when defining a lush-spec:
+
+```lua
+local theme = lush(function()
+  return {
+    -- your lush spec
+  }
+end, {
+  -- include your options here
+})
+```
+
+Lush accepts the following options:
+
+- `after`: a table, which may contain the following keys:
+  - `adjust_colors`: a list of hsl "adjust" functions, as described in [HSL Adjusters](#hsl-adjusters).
+    - These are executed in order. Every `fg` and `bg` key in your scheme is passed-to-and-replaced-by
+      the results of these functions. This means your `fg` and `bg` keys *must* be a true HSL color
+      (anything via hsl(...)).
+
+An example options table may look like this:
+
+```lua
+{
+  after = {
+    adjust_colors = {
+      hsl.adjust.contrast(40), -- increase contrast by 40%
+      hsl.adjust.protanopia()  -- sumulate protanopia
+    }
+  }
+}
 ```
 
 Additional Information
