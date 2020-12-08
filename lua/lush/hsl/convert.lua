@@ -85,6 +85,28 @@ end
 
 local M = {}
 
+-- Not for user consumption.
+-- RGB is over 0->255
+M.hsl_to_rgb = function(hsl)
+  -- limit hsl to 0.0 -> 1.0 domain
+  return hsl_to_rgb({
+    h = hsl.h / 360,
+    s = hsl.s / 100,
+    l = hsl.l / 100,
+  })
+end
+
+-- Not for user consumption.
+-- This does not return a true hsl type, just a table.
+M.rgb_to_hsl = function(rgb)
+  local hsl = rgb_to_hsl(rgb)
+  return {
+    h = round_number(hsl.h * 360),
+    s = round_number(hsl.s * 100),
+    l = round_number(hsl.l * 100),
+  }
+end
+
 M.hex_to_hsl = function(hex)
   local rgb = hex_to_rgb(hex)
   local hsl = rgb_to_hsl(rgb)
