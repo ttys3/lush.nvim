@@ -5,6 +5,13 @@ local function make_link(from, to)
   return "highlight! link " .. from .. " " .. to
 end
 
+-- remove trailing and leading comma from string.
+-- http://lua-users.org/wiki/CommonFunctions
+local function trimComma(s)
+  -- from PiL2 20.4
+  return (s:gsub("^,*(.-),*$", "%1"))
+end
+
 local function make_group(name, opts)
   -- We define groups "greedily", meaning we set any un-set options to NONE
   -- TODO: good idea or nah?
@@ -13,7 +20,9 @@ local function make_group(name, opts)
 
   -- be nice and fix gui spaces if present
   local gui = opts.gui or 'NONE'
+  -- maybe use vim.trim() better ?
   gui = string.gsub(gui, ' ', '')
+  gui = trimComma(gui)
 
   if gui == '' then
     gui = 'NONE'
